@@ -1,5 +1,39 @@
 require 'ast_ast'
 
+class Stack
+  def initialize(arr=[])
+    @stk = arr.dup
+  end
+  
+  def size
+    @stk.size
+  end
+  
+  def pop(n=nil)
+    n ? @stk.pop(n) : @stk.pop
+  end
+  
+  def push(*vals)
+    @stk.push(*vals)
+  end
+  
+  def top
+    @stk.first
+  end
+  
+  def clear
+    @stk = []
+  end
+  
+  def to_a
+    @stk
+  end
+  
+  def inspect
+    "{" + @stk.to_s[1..-2] + " <"
+  end
+end
+
 class Catcon
 
   class Lexer < Ast::Tokeniser
