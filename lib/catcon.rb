@@ -52,16 +52,23 @@ class Catcon
     @stdout = stdout
     @stderr = stderr
     @funcs  = {}
+    
+    @funcs[:SMALL?] = "STK_SIZE 1 :LTE?"
   end
   
-  def eval(str, stk=[])
-    tokens = Lexer.tokenise(str).reject {|i| i.type == :break }
+  def eval(str, stk=Stack.new)
+    str.gsub!(/^\s*#.*$/, '')
+    str.gsub!(/[ ]*(\n|\|)[ ]*/, ' ')
+    tokens = Lexer.tokenise(str)
 
     tokens.each do |type, value|
       case type
       when :fun
         if FUNCTIONS.has_key?(value)
           FUNCTIONS[value].call(self, stk)
+          
+        elsif ALIASES.has_key?(value)
+          FUNCTIONS[ALIASES[value]].call(self, stk)
           
         elsif @funcs.has_key?(value)
           stk = eval(@funcs[value], stk)
@@ -84,19 +91,75 @@ class Catcon
     stk
   end
   
+  ALIASES = {
+    :* => :PROD,
+    :+ => :ADD,
+    :- => :SUB,
+    :/ => :DIV,
+    :% => :MOD
+  }
   
   FUNCTIONS = {
-    :PRINT => proc {|e,stk| puts stk.first },
-    :* => proc {|e,stk| stk.push(stk.pop * stk.pop) },
-    :+ => proc {|e,stk| stk.push(stk.pop + stk.pop) },
-    :EQ? => proc {|e,stk| stk.push(stk.pop == stk.pop) },
-    :DUP => proc {|e,stk| stk.push(stk.first) },
-    :DEFINE => proc {|e,stk|
+    PRINT:    -> e,stk { puts(stk.top) },
+    
+  ## STACK OPERATIONS
+    
+    POP:      -> e,stk { stk.pop },
+    DUP:      -> e,stk { stk.push(stk.top) },
+    SWAP:     -> e,stk { stk.push(*stk.pop(2).reverse) },
+    DROP:     -> e,stk { stk.clear },
+    STK_SIZE: -> e,stk { stk.push(stk.size) },
+    
+    # SMALL?:   -> e,stk { stk.size <= 1 },
+    
+  ## ARITHMETIC OPERATIONS
+  
+    PROD:     -> e,stk { stk.push(stk.pop * stk.pop) },
+    ADD:      -> e,stk { stk.push(stk.pop + stk.pop) },
+    SUB:      -> e,stk { a,b = *stk.pop(2); stk.push(a - b) },
+    DIV:      -> e,stk { a,b = *stk.pop(2); stk.push(a / b) },
+    MOD:      -> e,stk { a,b = *stk.pop(2); stk.push(a % b) },
+    
+  ## BOOLEAN OPERATIONS
+    
+    # true false :OR #=> true
+    OR:       -> e,stk { stk.push(stk.pop || stk.pop) },
+    # true false :AND #=> false
+    AND:      -> e,stk { stk.push(stk.pop && stk.pop) },
+    
+  ## COMPARATIVE OPERATIONS
+    
+    # 3 3 :EQ? #=> true as 3 == 3
+    # 2 3 :EQ? #=> false
+    EQ?:      -> e,stk { stk.push(stk.pop == stk.pop) },
+    # 2 3 :GT? #=> true as 3 > 2
+    # 3 2 :GT? #=> false
+    GT?:      -> e,stk { stk.push(stk.pop > stk.pop) },
+    # 3 2 :LT? #=> true as 2 < 3
+    # 2 3 :LT? #=> false
+    LT?:      -> e,stk { stk.push(stk.pop < stk.pop) },
+    
+    GTE?:     -> e,stk { stk.push(stk.pop >= stk.pop) },
+    LTE?:     -> e,stk { stk.push(stk.pop <= stk.pop) },
+    
+  ## OTHERS
+    
+    # @param1 [String] name
+    # @param2 [Statement] body
+    # @example
+    #   "NAME" [...] :DEFINE
+    DEFINE: -> e,stk {
       stms = stk.pop
       name = stk.pop
       e.funcs[name.to_sym] = stms
     },
-    :IF => proc {|e,stk| 
+    
+    # @param1 [Boolean] condition
+    # @param2 [Statement] else clause
+    # @param3 [Statement] if clause
+    # @example
+    #   true ["was false"] ["was true"] :IF
+    IF: -> e,stk {
       t, f, cond = stk.pop, stk.pop, stk.pop
       stk = e.eval(cond ? t : f, stk)
     }
