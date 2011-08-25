@@ -42,7 +42,8 @@ class Catcon
     rule(:fun, /:[^ ]+/)    {|i| i[1..-1].to_sym }
     rule(:stm, /\[.*?\]/)   {|i| i[1..-2] }
     
-    rule :break, /[ ]*(\n|\|)[ ]*/
+    rule(:true, /true/)     {|i| true }
+    rule(:false, /false/)   {|i| false }
   end
 
   attr_accessor :funcs
