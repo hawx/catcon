@@ -3,6 +3,29 @@
 This specification provides an outline for Catcon's basic functionality. It 
 also acts as the documentation for Catcon.
 
+
+# Types
+
+__NOTE:__ This is merely a reference for the future as I haven't implemented it 
+properly yet.
+
+Catcon consists of four basic types:
+
+`bool`
+  A boolean value either `true` or `false`
+  
+`num`
+  A generic number
+  
+`char`
+  A unicode character representation
+  
+`list`
+  A collection of items of any type
+
+
+# Functions
+
 ## How To Read
 
 Function signatures are given in the following style
