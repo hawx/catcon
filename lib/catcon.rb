@@ -53,16 +53,14 @@ class Catcon
   class Lexer < Ast::Tokeniser
     rule(:str, /".*?"/)     {|i| i[1..-2] }
     rule(:num, /\d+/)       {|i| i.to_f }
-    rule(:fun, /:[^ \]]+/)    {|i| i[1..-1].to_sym }
+    rule(:fun, /:[^ \]]+/)  {|i| i[1..-1].to_sym }
 
-    rule :open, /\[/
+    rule :open,  /\[/
     rule :close, /\]/
     
     rule(:true, /true/)     {|i| true }
     rule(:false, /false/)   {|i| false }
   end
-  
-  
 
   attr_accessor :funcs
   
@@ -73,7 +71,6 @@ class Catcon
     
     self.eval(BOOT)
   end
-  
   
   def parse(str)
     str.gsub!(/^\s*#.*$/, '')
@@ -144,19 +141,6 @@ class Catcon
     stk
   end
   
-  ALIASES = {
-    :* => :prod,
-    :+ => :add,
-    :- => :sub,
-    :/ => :div,
-    :% => :mod,
-    
-    :'=' => :eq?,
-    :>   => :gt?,
-    :<   => :lt?,
-    :>=  => :gte?,
-    :<=  => :lte?
-  }
   
   FUNCTIONS = {
     print:    -> e,stk { puts(stk.top) },
@@ -170,8 +154,6 @@ class Catcon
     drop:     -> e,stk { stk.clear },
     stk_size: -> e,stk { stk.push(stk.size) },
     
-    # SMALL?:   -> e,stk { stk.size <= 1 },
-    
   ## ARITHMETIC OPERATIONS
   
     prod:     -> e,stk { stk.push(stk.pop * stk.pop) },
@@ -182,21 +164,21 @@ class Catcon
     
   ## BOOLEAN OPERATIONS
     
-    # true false :OR #=> true
+    # true false :or #=> true
     or:       -> e,stk { stk.push(stk.pop || stk.pop) },
-    # true false :AND #=> false
+    # true false :and #=> false
     and:      -> e,stk { stk.push(stk.pop && stk.pop) },
     
   ## COMPARATIVE OPERATIONS
     
-    # 3 3 :EQ? #=> true as 3 == 3
-    # 2 3 :EQ? #=> false
+    # 3 3 :eq? #=> true as 3 == 3
+    # 2 3 :eq? #=> false
     eq?:      -> e,stk { stk.push(stk.pop == stk.pop) },
-    # 2 3 :GT? #=> true as 3 > 2
-    # 3 2 :GT? #=> false
+    # 2 3 :gt? #=> true as 3 > 2
+    # 3 2 :gt? #=> false
     gt?:      -> e,stk { stk.push(stk.pop > stk.pop) },
-    # 3 2 :LT? #=> true as 2 < 3
-    # 2 3 :LT? #=> false
+    # 3 2 :lt? #=> true as 2 < 3
+    # 2 3 :lt? #=> false
     lt?:      -> e,stk { stk.push(stk.pop < stk.pop) },
     
   ## OTHERS
@@ -218,25 +200,37 @@ class Catcon
     #   true ["was false"] ["was true"] :IF
     if: -> e,stk {
       t, f, cond = stk.pop, stk.pop, stk.pop
-      stk = e._eval(cond ? t : f, stk)
+      e._eval(cond ? t : f, stk)
     },
     
     # Calls the statement at the top of the stack.
     # @example
     #   ["called" :print] :call
     call: -> e,stk {
-      e._eval(stk.pop, stk)
+      stk.push(e._eval(stk.pop, stk))
     },
     
     # Provide an alias for a function
     # @example
     #   "lte? "<=" :alias
     alias: -> e,stk {
-      ALIASES[stk.pop] = stk.pop
+      ALIASES[stk.pop.to_sym] = stk.pop.to_sym
     }
   }
   
+  ALIASES = {}
+  
   BOOT = <<-EOS
+    "add"  "+" :alias
+    "prod" "*" :alias
+    "sub"  "-" :alias
+    "div"  "/" :alias
+    "mod"  "%" :alias
+    
+    "eq?"  "=" :alias
+    "gt?"  ">" :alias
+    "lt?"  "<" :alias
+  
     "invert" [
       [true]
       [false]
@@ -262,19 +256,39 @@ class Catcon
   # Basic Types
   
   class Num
-  
+    def initialize(num)
+      @num = num
+    end
   end
   
   class Bool
-  
+    def initialize(bool)
+      @bool = bool
+    end
+    
+    def self.true
+      new(true)
+    end
+    
+    def self.false
+      new(false)
+    end
   end
   
   class Char
-  
+    def initialize(char)
+      @char = char
+    end
   end
   
-  class List < ::Array
-  
+  class List
+    def initialize(list)
+      @list = list
+    end
+    
+    def <<(val)
+      @list << val
+    end
   end
 
 end
