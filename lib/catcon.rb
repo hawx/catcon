@@ -52,7 +52,9 @@ class Catcon
     rule(:str, /".*?"/)     {|i| i[1..-2] }
     rule(:num, /\d+/)       {|i| i.to_f }
     rule(:fun, /:[^ ]+/)    {|i| i[1..-1].to_sym }
-    rule(:stm, /\[.*?\]/)   {|i| i[1..-2] }
+
+    rule(:open, /\[/)
+    rule :close, /\]/
     
     rule(:true, /true/)     {|i| true }
     rule(:false, /false/)   {|i| false }
@@ -65,13 +67,39 @@ class Catcon
     @stderr = stderr
     @funcs  = {}
     
-    @funcs[:SMALL?] = "STK_SIZE 1 :LTE?"
+    @funcs[:small?] = ":stk_size 1 :lte?"
+   # self.eval(BOOT)
+  end
+  
+  
+  def parse(str)
+    str.gsub!(/^\s*#.*$/, '')
+    str.gsub!(/[ ]*(\n|\|)[ ]*/, ' ')
+    
+    tokens = Lexer.tokenise(str)
+    _parse(tokens)
+  end
+
+  def _parse(tokens, i=0)
+    r = Ast::Tokens.new
+
+    until tokens[i].type == :close
+    
+      if tokens[i].type == :open
+        i += 1
+        r << Ast::Token.new(:stm, _parse(tokens, i))
+      else
+        r << tokens[i]
+      end
+      
+      i += 1
+      break unless i < tokens.size
+    end
+    r
   end
   
   def eval(str, stk=Stack.new)
-    str.gsub!(/^\s*#.*$/, '')
-    str.gsub!(/[ ]*(\n|\|)[ ]*/, ' ')
-    tokens = Lexer.tokenise(str)
+    tokens = parse(str)
 
     tokens.each do |type, value|
       case type
