@@ -1,5 +1,17 @@
 require 'ast_ast'
 
+class Ast::Tokens
+  def to_a
+    self.collect {|i|
+      if i.value.respond_to?(:to_a)
+        [i.type, i.value.to_a]
+      else
+        i.to_a
+      end
+    }
+  end
+end
+
 class Stack
   def initialize(arr=[])
     @stk = arr.dup
