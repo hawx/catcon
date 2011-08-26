@@ -71,7 +71,6 @@ class Catcon
     @stderr = stderr
     @funcs  = {}
     
-    @funcs[:small?] = ":stk_size 1 :lte?"
     self.eval(BOOT)
   end
   
@@ -129,7 +128,7 @@ class Catcon
           stk = _eval(@funcs[value], stk)
         
         else
-          puts "Could not find function: #{value}"
+          raise "Could not find function: #{value}"
         end
         
       when :stm
@@ -200,9 +199,6 @@ class Catcon
     # 2 3 :LT? #=> false
     lt?:      -> e,stk { stk.push(stk.pop < stk.pop) },
     
-    gte?:     -> e,stk { stk.push(stk.pop >= stk.pop) },
-    # lte?:     -> e,stk { stk.push(stk.pop <= stk.pop) },
-    
   ## OTHERS
     
     # @param1 [String] name
@@ -226,8 +222,17 @@ class Catcon
     },
     
     # Calls the statement at the top of the stack.
+    # @example
+    #   ["called" :print] :call
     call: -> e,stk {
       e._eval(stk.pop, stk)
+    },
+    
+    # Provide an alias for a function
+    # @example
+    #   "lte? "<=" :alias
+    alias: -> e,stk {
+      ALIASES[stk.pop] = stk.pop
     }
   }
   
@@ -241,8 +246,18 @@ class Catcon
     "lte?" [
       :gt? :invert
     ] :define
+
+    "gte?" [
+      :lt? :invert
+    ] :define
+    
+    "lte?" "<=" :alias
+    "gte?" ">=" :alias
+    
+    "small?" [
+      :stk_size 1 :lte?
+    ] :define
   EOS
-  
   
   # Basic Types
   
