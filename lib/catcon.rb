@@ -30,7 +30,7 @@ class Stack
   end
   
   def top
-    @stk.first
+    @stk.last
   end
   
   def clear
@@ -42,23 +42,27 @@ class Stack
   end
   
   def inspect
-    "{" + @stk.to_s[1..-2] + " <"
+    @stk.to_s + "<"
   end
 end
+
+
 
 class Catcon
 
   class Lexer < Ast::Tokeniser
     rule(:str, /".*?"/)     {|i| i[1..-2] }
     rule(:num, /\d+/)       {|i| i.to_f }
-    rule(:fun, /:[^ ]+/)    {|i| i[1..-1].to_sym }
+    rule(:fun, /:[^ \]]+/)    {|i| i[1..-1].to_sym }
 
-    rule(:open, /\[/)
+    rule :open, /\[/
     rule :close, /\]/
     
     rule(:true, /true/)     {|i| true }
     rule(:false, /false/)   {|i| false }
   end
+  
+  
 
   attr_accessor :funcs
   
@@ -68,39 +72,50 @@ class Catcon
     @funcs  = {}
     
     @funcs[:small?] = ":stk_size 1 :lte?"
-   # self.eval(BOOT)
+    self.eval(BOOT)
   end
   
   
   def parse(str)
     str.gsub!(/^\s*#.*$/, '')
     str.gsub!(/[ ]*(\n|\|)[ ]*/, ' ')
+    str.chomp!
+    str.strip!
     
     tokens = Lexer.tokenise(str)
-    _parse(tokens)
+    a,i = _parse(tokens)
+    a
   end
 
   def _parse(tokens, i=0)
     r = Ast::Tokens.new
 
-    until tokens[i].type == :close
-    
-      if tokens[i].type == :open
+    loop do
+      curr = tokens[i]
+
+      break if i >= tokens.size
+      break if curr.type == :close
+      
+      if curr.type == :open
         i += 1
-        r << Ast::Token.new(:stm, _parse(tokens, i))
+        a, i = _parse(tokens, i)
+        r << Ast::Token.new(:stm, a)
       else
-        r << tokens[i]
+        r << curr
       end
       
       i += 1
-      break unless i < tokens.size
     end
-    r
+    
+    return r, i
   end
   
   def eval(str, stk=Stack.new)
     tokens = parse(str)
-
+    _eval(tokens, stk)
+  end
+  
+  def _eval(tokens, stk)
     tokens.each do |type, value|
       case type
       when :fun
@@ -111,7 +126,7 @@ class Catcon
           FUNCTIONS[ALIASES[value]].call(self, stk)
           
         elsif @funcs.has_key?(value)
-          stk = eval(@funcs[value], stk)
+          stk = _eval(@funcs[value], stk)
         
         else
           puts "Could not find function: #{value}"
@@ -123,64 +138,70 @@ class Catcon
         stk.push(value)
         
       else
-        stk.push(value)    
+        stk.push(value)  
       end
-      
     end
-
+    
     stk
   end
   
   ALIASES = {
-    :* => :PROD,
-    :+ => :ADD,
-    :- => :SUB,
-    :/ => :DIV,
-    :% => :MOD
+    :* => :prod,
+    :+ => :add,
+    :- => :sub,
+    :/ => :div,
+    :% => :mod,
+    
+    :'=' => :eq?,
+    :>   => :gt?,
+    :<   => :lt?,
+    :>=  => :gte?,
+    :<=  => :lte?
   }
   
   FUNCTIONS = {
-    PRINT:    -> e,stk { puts(stk.top) },
+    print:    -> e,stk { puts(stk.top) },
+    to_s:     -> e,stk { stk.top.to_s },
     
   ## STACK OPERATIONS
     
-    POP:      -> e,stk { stk.pop },
-    DUP:      -> e,stk { stk.push(stk.top) },
-    SWAP:     -> e,stk { stk.push(*stk.pop(2).reverse) },
-    DROP:     -> e,stk { stk.clear },
-    STK_SIZE: -> e,stk { stk.push(stk.size) },
+    pop:      -> e,stk { stk.pop },
+    dup:      -> e,stk { stk.push(stk.top) },
+    swap:     -> e,stk { stk.push(*stk.pop(2).reverse) },
+    drop:     -> e,stk { stk.clear },
+    stk_size: -> e,stk { stk.push(stk.size) },
     
     # SMALL?:   -> e,stk { stk.size <= 1 },
     
   ## ARITHMETIC OPERATIONS
   
-    PROD:     -> e,stk { stk.push(stk.pop * stk.pop) },
-    ADD:      -> e,stk { stk.push(stk.pop + stk.pop) },
-    SUB:      -> e,stk { a,b = *stk.pop(2); stk.push(a - b) },
-    DIV:      -> e,stk { a,b = *stk.pop(2); stk.push(a / b) },
-    MOD:      -> e,stk { a,b = *stk.pop(2); stk.push(a % b) },
+    prod:     -> e,stk { stk.push(stk.pop * stk.pop) },
+    add:      -> e,stk { stk.push(stk.pop + stk.pop) },
+    sub:      -> e,stk { a,b = *stk.pop(2); stk.push(a - b) },
+    div:      -> e,stk { a,b = *stk.pop(2); stk.push(a / b) },
+    mod:      -> e,stk { a,b = *stk.pop(2); stk.push(a % b) },
     
   ## BOOLEAN OPERATIONS
     
     # true false :OR #=> true
-    OR:       -> e,stk { stk.push(stk.pop || stk.pop) },
+    or:       -> e,stk { stk.push(stk.pop || stk.pop) },
     # true false :AND #=> false
-    AND:      -> e,stk { stk.push(stk.pop && stk.pop) },
+    and:      -> e,stk { stk.push(stk.pop && stk.pop) },
     
   ## COMPARATIVE OPERATIONS
     
     # 3 3 :EQ? #=> true as 3 == 3
     # 2 3 :EQ? #=> false
-    EQ?:      -> e,stk { stk.push(stk.pop == stk.pop) },
+    eq?:      -> e,stk { stk.push(stk.pop == stk.pop) },
     # 2 3 :GT? #=> true as 3 > 2
     # 3 2 :GT? #=> false
-    GT?:      -> e,stk { stk.push(stk.pop > stk.pop) },
+    gt?:      -> e,stk { stk.push(stk.pop > stk.pop) },
     # 3 2 :LT? #=> true as 2 < 3
     # 2 3 :LT? #=> false
-    LT?:      -> e,stk { stk.push(stk.pop < stk.pop) },
+    lt?:      -> e,stk { stk.push(stk.pop < stk.pop) },
     
-    GTE?:     -> e,stk { stk.push(stk.pop >= stk.pop) },
-    LTE?:     -> e,stk { stk.push(stk.pop <= stk.pop) },
+    gte?:     -> e,stk { stk.push(stk.pop >= stk.pop) },
+    # lte?:     -> e,stk { stk.push(stk.pop <= stk.pop) },
     
   ## OTHERS
     
@@ -188,7 +209,7 @@ class Catcon
     # @param2 [Statement] body
     # @example
     #   "NAME" [...] :DEFINE
-    DEFINE: -> e,stk {
+    define: -> e,stk {
       stms = stk.pop
       name = stk.pop
       e.funcs[name.to_sym] = stms
@@ -199,10 +220,46 @@ class Catcon
     # @param3 [Statement] if clause
     # @example
     #   true ["was false"] ["was true"] :IF
-    IF: -> e,stk {
+    if: -> e,stk {
       t, f, cond = stk.pop, stk.pop, stk.pop
-      stk = e.eval(cond ? t : f, stk)
+      stk = e._eval(cond ? t : f, stk)
+    },
+    
+    # Calls the statement at the top of the stack.
+    call: -> e,stk {
+      e._eval(stk.pop, stk)
     }
   }
+  
+  BOOT = <<-EOS
+    "invert" [
+      [true]
+      [false]
+      :if
+    ] :define
+  
+    "lte?" [
+      :gt? :invert
+    ] :define
+  EOS
+  
+  
+  # Basic Types
+  
+  class Num
+  
+  end
+  
+  class Bool
+  
+  end
+  
+  class Char
+  
+  end
+  
+  class List < ::Array
+  
+  end
 
 end
