@@ -1,0 +1,37 @@
+#!/usr/bin/env ruby
+
+$: << File.dirname(__FILE__) + '/../lib'
+require 'catcon'
+
+@e = Catcon.new
+@s = Stack.new
+
+def e(code)
+  @s = @e.eval(code, @s)
+end
+
+if file = ARGV.first
+  e File.read(file)
+  
+else
+  require 'readline'
+  puts "Catcon REPL, CTRL+C to quit"
+  loop do
+    line = Readline::readline('>> ')
+    
+    opens  = line.count('[')
+    closes = line.count(']')
+    
+    until opens == closes
+      s = ''
+      (opens - closes).times { s << ' ' }
+      line << "\n" << Readline::readline(s + '>> ')
+      opens  = line.count('[')
+      closes = line.count(']')
+    end
+    
+    Readline::HISTORY.push(line)
+    puts "=> #{e(line).to_a.inspect}"
+  end
+end
+
