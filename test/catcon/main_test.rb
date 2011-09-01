@@ -6,7 +6,7 @@ class MainTest < MiniTest::Unit::TestCase
   def setup
     @stdout = StringIO.new
     @stderr = StringIO.new
-    @e = Catcon.new(@stdout, @stderr)
+    @e = Catcon.new({:stdout => @stdout, :stderr => @stderr})
   end
   
   
