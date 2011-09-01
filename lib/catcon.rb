@@ -64,12 +64,19 @@ class Catcon
 
   attr_accessor :funcs
   
-  def initialize(stdout=$stdout, stderr=$stderr)
-    @stdout = stdout
-    @stderr = stderr
-    @funcs  = {}
+  DEFAULTS = {
+    :stdout => $stdout,
+    :stderr => $stderr,
+    :stdin  => $stdin,
+    :debug  => false
+  }
+  
+  def initialize(opts={})
+    @funcs = {}
+    @opts  = DEFAULTS
     
     self.eval(BOOT)
+    @opts.merge!(opts)
   end
   
   def parse(str)
