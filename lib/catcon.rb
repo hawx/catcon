@@ -120,16 +120,26 @@ class Catcon
   
   def _eval(tokens, stk)
     tokens.each do |type, value|
+      p stk if @opts[:debug]
+    
       case type
       when :fun
         if FUNCTIONS.has_key?(value)
           FUNCTIONS[value].call(self, stk)
           
         elsif ALIASES.has_key?(value)
-          FUNCTIONS[ALIASES[value]].call(self, stk)
+          al = ALIASES[value]
+          
+          if FUNCTIONS.has_key?(al)
+            FUNCTIONS[al].call(self, stk)
+          elsif @funcs.has_key?(al)
+            _eval(@funcs[al], stk)
+          else
+            raise "Could not find function: #{al}"
+          end
           
         elsif @funcs.has_key?(value)
-          stk = _eval(@funcs[value], stk)
+          _eval(@funcs[value], stk)
         
         else
           raise "Could not find function: #{value}"
@@ -201,11 +211,25 @@ class Catcon
     },
     
     # @param1 [Boolean] condition
+    # @param3 [Statement] if clause
+    # @example
+    #   true ["was true"] :if
+    if: -> e,stk {
+      t, cond = stk.pop, stk.pop
+      e._eval(t, stk) if cond
+    },
+    
+    unless: -> e,stk {
+      f, cond = stk.pop, stk.pop
+      e._eval(f, stk) unless cond
+    },
+    
+    # @param1 [Boolean] condition
     # @param2 [Statement] else clause
     # @param3 [Statement] if clause
     # @example
-    #   true ["was false"] ["was true"] :IF
-    if: -> e,stk {
+    #   true ["was false"] ["was true"] :ifelse
+    ifelse: -> e,stk {
       t, f, cond = stk.pop, stk.pop, stk.pop
       e._eval(cond ? t : f, stk)
     },
@@ -238,18 +262,20 @@ class Catcon
     "gt?"  ">" :alias
     "lt?"  "<" :alias
   
-    "invert" [
+    "not" [
       [true]
       [false]
-      :if
+      :ifelse
     ] :define
+    
+    "not" "!" :alias
   
     "lte?" [
-      :gt? :invert
+      :gt? :!
     ] :define
 
     "gte?" [
-      :lt? :invert
+      :lt? :!
     ] :define
     
     "lte?" "<=" :alias
