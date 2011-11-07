@@ -105,7 +105,7 @@ description of the function.
     
     5 :sq  #=> 25
 
-:if (stm stm bool) -> ()
+:ifelse (stm stm bool) -> ()
   Conditionally evaluates one of two statements, if the condition is true the top 
   statement is evaluated (with the condition being the third item on the stack), if
   the condition is false the second statement is evaluated.
@@ -113,4 +113,4 @@ description of the function.
     4 3 :eq?
     ["4 is not equal to 3!" :print]
     ["4 is equal to 3?" :print]
-    :if  #=> "4 is not equal to 3!"
+    :ifelse  #=> "4 is not equal to 3!"
