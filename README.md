@@ -1,58 +1,96 @@
 # CatCon
 
-A (toy) concatenative language built in Ruby. It uses a single stack, that stack is 
-taken by functions by default populated
-by the command line input. It then runs through the program vertically executing lines
-as required to produce an output.
+A (toy) [concatenative language][caten] built in Ruby. It is [stack based][stack]
+so named variables are not available (though named functions are).
 
-     25 10 :* 50 :+ :PRINT
-
-would print (25 * 10) + 50, which is 300
+     25 10 :* 50 :+ :print
+     #=> 300
+     # in other languages it's probably written like this
+     # print((25 * 10) + 50)
    
-     25 10 :* 50 :+ 300 :EQ? :PRINT
+     25 10 :* 50 :+ 300 :eq? :print
+     #=> true
+     # as 300 == 300
 
-would print true as 300 is EQ? (equal) to 300. To really understand what is happening
+would print true as 300 is equal (`:eq?`) to 300. To really understand what is happening
 take it step by step.
    
      []           # program begins with empty stack
      [25]         # 25 is pushed on to the stack
-     [10, 25]     # 10 is pushed on
-     [250]        # :* takes top two items on the stack and mulitplies them
-     [50, 250]    # 50 is pushed on
+     [25, 10]     # 10 is pushed on
+     [250]        # :* takes top two items on the stack and multiplies them
+     [250, 50]    # 50 is pushed on
      [300]        # :+ takes the top two items and adds them together
      [300, 300]   # 300 is pushed on
      [true]       # :eq? takes the top two items and checks whether they are equal
-     #=> true
-     [true]       # :PRINT takes the top item and prints it to STDERR leaving the item
+      #=> true    # :print takes the top item and prints it to STDERR
 
-To define functions use the :DEF function.
+## Defining Functions
 
-    :DEFINE SQUARE :DUP :*
+To define functions use the :define function.
+
+    "sq" [
+      :dup :*
+    ] :define
     
-    5 :SQUARE
-    
-    [5]    # 5 pushed on to the stack
-    [5, 5] # :DUP adds a copy of the top item to the top of the stack
-    [25]   # :* takes the top two items and squares them
+    5 :sq :print
+    #=> 25
+    # [5]    # 5 pushed on to the stack
+    # [5, 5] # :DUP adds a copy of the top item to the top of the stack
+    # [25]   # :* takes the top two items and multiplies them
 
+Note that to name the function a string was used not an identifier (something beginning `:`)
+as that would have meant `:sq` was called, which didn't exist until it was `:define`d
 
 ## Flow Control
 
-The :IF function takes the top item from the stack and tests whether it is `true` or 
-`false`, if `true` ...
+The `:if` function takes the top item from the stack and tests whether it is `true` or 
+`false`, if `true` it evaluates the second item on the stack, if `false` it evaluates
+the third item.
 
-    300 25 10 * 50 + :EQ? ["300 = 300" :PRINT] [] :IF
+    true
+    ["It was false" :print]
+    ["It was true" :print]
+    :ifelse
+    #=> "It was true"
+    #
+    # [true]
+    # [true, ["It was false", :print]]
+    # [true, ["It was false", :print], ["It was true", :print]]
+
+
+    300 25 10 :* 50 :+ :eq? 
+    ["300 = 300" :print] :if
     
-    [300]
-    [25, 300]                           # :*
-    [250, 300]
-    [300, 300]                          # :+
-    [true]                              # :EQ?
-    [["300 = 300", :PRINT], true]
-    [[], ["300 = 300", :PRINT], true]
-    #=> "300 = 300"
-    ["300 = 300"]
+    # [300]
+    # [25, 300]                           # :*
+    # [250, 300]
+    # [300, 300]                          # :+
+    # [true]                              # :EQ?
+    # [["300 = 300", :PRINT], true]
+    # [[], ["300 = 300", :PRINT], true]
+    # #=> "300 = 300"
+    # ["300 = 300"]
+    
+
+## Delayed Evaluation
+
+Wrapping a set of instructions with square brackets (`[` and `]`) prevents them from
+being evaluated immediately. These are used for certain functions, `:IF` and `:DEFINE`
+for instance, to execute a statement use the `:CALL` function:
+
+    1 2 [:swap 1 :+] :call :eq?
+    
+    # [1]
+    # [2, 1]
+    # [[:SWAP, 1, :+], 2, 1]
+    # [1, 2] -> [1, 1, 2] -> [2, 2]
+    # [true]
     
     
     
+
+
+[caten]: http://en.wikipedia.org/wiki/Concatenative_programming_language "Concatenative programming language"
+[stack]: http://en.wikipedia.org/wiki/Stack-based "Stack based programming language"
     
