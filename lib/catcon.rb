@@ -67,7 +67,7 @@ class Catcon
     rule(:str, /".*?"|'.*?'/)        {|i| i[1..-2] }
     rule(:num, /\d+/)                {|i| i.to_i }
     rule(:single, /:(\w+[!?]?|\S)/)  {|i| i[1..-1] }
-    rule(:fun, /(\w+[!?]?|\S)/)
+    rule :fun, /(\w+[!?]?|\S)/
   end
 
   attr_accessor :funcs
@@ -242,7 +242,7 @@ class Catcon
     prod:     -> e,stk { stk.push(stk.pop * stk.pop) },
     add:      -> e,stk { stk.push(stk.pop + stk.pop) },
     sub:      -> e,stk { a,b = *stk.pop(2); stk.push(a - b) },
-    div:      -> e,stk { a,b = *stk.pop(2); stk.push(a / b) },
+    div:      -> e,stk { a,b = *stk.pop(2); stk.push(a.to_f / b.to_f) },
     mod:      -> e,stk { a,b = *stk.pop(2); stk.push(a % b) },
 
     ## BOOLEAN OPERATIONS
