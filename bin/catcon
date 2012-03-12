@@ -3,7 +3,13 @@
 $: << File.dirname(__FILE__) + '/../lib'
 require 'catcon'
 
-Instance = Catcon.new
+debug  = !!ARGV.delete('--debug')
+
+opts = {
+  :debug => debug
+}
+
+Instance = Catcon.new(opts)
 
 def e(code)
   Instance.eval code
