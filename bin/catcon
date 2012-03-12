@@ -3,30 +3,27 @@
 $: << File.dirname(__FILE__) + '/../lib'
 require 'catcon'
 
-debug = !!ARGV.delete('--debug')
-
-@e = Catcon.new({:debug => debug})
-@s = Stack.new
+Instance = Catcon.new
 
 def e(code)
-  @s = @e.eval(code, @s)
-rescue RuntimeError => err
+  Instance.eval code
+rescue => err
   puts "Error: #{err.message}"
 end
 
 
 if file = ARGV.first
   e File.read(file)
-  
+
 else
   require 'readline'
   puts "Catcon REPL, CTRL+C or type 'quit' to quit"
   loop do
     line = Readline::readline('>> ')
-    
+
     opens  = line.count('[')
     closes = line.count(']')
-    
+
     until opens == closes
       s = ''
       (opens - closes).times { s << ' ' }
@@ -34,11 +31,10 @@ else
       opens  = line.count('[')
       closes = line.count(']')
     end
-    
+
     break if line == "quit"
-    
+
     Readline::HISTORY.push(line)
     puts "=> #{e(line).inspect}"
   end
 end
-
