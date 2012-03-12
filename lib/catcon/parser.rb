@@ -5,7 +5,8 @@ module Catcon
     class Lexer < Ast::Tokeniser
       rule(:stmt,    /\[(.*?)\]/m)   {|i| [Parser.parse(i[1])] }
       rule(:list,    /\((.*?)\)/m)   {|i| i.first }
-      rule(:single,  /:([^\s]+)/)   {|i| [[i[1]]] }
+      rule(:string,  /"(.*?)"/m)     {|i| i.first }
+      rule(:single,  /:([^\s]+)/)    {|i| [[i[1]]] }
       rule(:func,    /[^\s]+/)
     end
 
