@@ -71,6 +71,13 @@ describe Catcon::Interpreter do
       end
     end
 
+    describe '#swap' do
+      it 'swaps the second and third items' do
+        subject.eval '1 2 3 4 swapp'
+        subject.stack.must_equal [1, 3, 2, 4]
+      end
+    end
+
     describe '#drop' do
       it 'clears the stack' do
         subject.eval '1 2 3 4 drop'
@@ -237,6 +244,16 @@ describe Catcon::Interpreter do
         subject.eval '2 sq'
         subject.stack.must_equal [4]
       end
+    end
+
+  end
+
+  describe 'some example functions to test' do
+
+    it 'can calculate factorials' do
+      subject.eval 'factorial [ dup 0 = [pop 1] [dup dec factorial prod] if ] define'
+      subject.eval '7 factorial'
+      subject.stack.must_equal [720]
     end
 
   end

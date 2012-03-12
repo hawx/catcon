@@ -8,18 +8,19 @@ module Catcon
 
     # Basic I/O
 
-    'print' => proc {|e,s| e.stdout.puts s.top },
-    'input' => proc {|e,s| s.push e.stdin.gets },
+    'print' => proc {|e,s| e.opts[:stdout].puts s.top },
+    'input' => proc {|e,s| s.push e.opts[:stdin].gets },
     'read'  => proc {|e,s| s.push File.read(s.pop) },
     'eval'  => proc {|e,s| e.eval s.pop },
 
     # Stack operations
 
-    'pop'  => proc {|e,s| s.pop },
-    'dup'  => proc {|e,s| s.push(s.top) },
-    'swap' => proc {|e,s| s.push *s.pop(2).reverse },
-    'drop' => proc {|e,s| s.clear },
-    'size' => proc {|e,s| s.push(s.size) },
+    'pop'   => proc {|e,s| s.pop },
+    'dup'   => proc {|e,s| s.push(s.top) },
+    'swap'  => proc {|e,s| s.push *s.pop(2).reverse },
+    'swapp' => proc {|e,s| a,b,c = *s.pop(3); s.push b, a, c },
+    'drop'  => proc {|e,s| s.clear },
+    'size'  => proc {|e,s| s.push(s.size) },
 
     ## Arithmetic operations
 
