@@ -17,6 +17,7 @@ $: << File.dirname(__FILE__)
 require 'catcon/stack'
 require 'catcon/table'
 require 'catcon/list'
+require 'catcon/function'
 
 require 'catcon/builtin'
 require 'catcon/parser'

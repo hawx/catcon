@@ -58,7 +58,7 @@ module Catcon
     end
 
     def define(name, stms)
-      @table.define(name, proc {|e,s| e.run(stms) })
+      @table.define(name, stms)
     end
 
     def alias(to, from)

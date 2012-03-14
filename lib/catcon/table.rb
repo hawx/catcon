@@ -2,7 +2,7 @@ module Catcon
 
   class Table
     def initialize(tbl={})
-      @tbl = tbl
+      @tbl = Hash[ tbl.map {|k,v| [k, Function.new(v)] } ]
       @aliases = {}
     end
 
@@ -38,8 +38,8 @@ module Catcon
       @aliases.keys
     end
 
-    def define(name, prc)
-      @tbl[name] = prc
+    def define(name, body)
+      @tbl[name] = Function.new(body)
     end
 
     def alias(from, to)
